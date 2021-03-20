@@ -5,6 +5,7 @@ import logging
 logger = logging.getLogger("gnebie_gan")
 import tensorflow as tf
 
+# https://docs.python.org/fr/3/library/abc.html
 
 class AbstractGanModel(object):
     __metaclass__ = abc.ABCMeta

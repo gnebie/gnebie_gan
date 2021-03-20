@@ -17,9 +17,10 @@ from data.mnist_data import MnistData
 def simple_mnist_model(flags):
     logger.info("Create simple mnist gan model.")
 
-    gan = SimpleGan(flags)
+    save_data = SaveData(flags)
     datas = MnistData(flags)
-    save_data = SaveData(flags, gan)
+    gan = SimpleGan(flags, save_data)
+
 
     model = Model(flags, gan, datas, save_data)
     return model
@@ -62,3 +63,17 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+"""
+
+achitecture
+
+
+main -
+        model : run the model
+        datasets : load datas
+        gan_model : generator/discriminator model
+                    model_save: save the model
+        save_samples: save samples and infos  
+
+"""

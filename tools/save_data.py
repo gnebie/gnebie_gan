@@ -22,6 +22,8 @@ class SaveData(object):
         self.g_hist = list()
         self.a1_hist = list()
         self.a2_hist = list()
+        self.seed = tf.random.normal([num_examples_to_generate, noise_dim])
+
 
     def record_history(self, step, d_loss1, d_loss2, g_loss, d_acc1, d_acc2):
         # summarize loss on this batch

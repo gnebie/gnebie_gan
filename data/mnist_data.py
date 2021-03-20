@@ -13,11 +13,20 @@ logger = logging.getLogger("gnebie_gan")
 
 class MnistData(AbstractDataManager):
     def __init__(self, flags):
+        super().__init__(flags)
         self.flags = flags
         self.dataset = self.load_real_sample()
 
     def get_dataset(self):
         return load_data()
+
+    def get_train_bached_dataset(self):
+        BUFFER_SIZE = 60000
+        BATCH_SIZE = 256
+        (train_images, _), (_, _) = self.get_dataset()
+        train_images = (train_images - 127.5) / 127.5 # Normalize the images to [-1, 1]
+        return tf.data.Dataset.from_tensor_slices(train_images).shuffle(BUFFER_SIZE).batch(BATCH_SIZE)
+
 
     def load_real_sample(self):
         return self.load_real_sample_labeled(8)
@@ -34,6 +43,7 @@ class SubFolderData(AbstractDataManager):
         self.flags = flags
         self.dataset_path = '/home/gnebie/Downloads/anime-faces/clean'
         self.dataset = self.load_real_sample()
+        self.batch 
 
     def get_dataset(self):
         return []
