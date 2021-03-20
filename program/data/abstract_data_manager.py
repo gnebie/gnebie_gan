@@ -16,9 +16,40 @@ class AbstractDataManager(object):
     __metaclass__ = abc.ABCMeta
    
     def __init__(self, flags):
-        super().__init__(flags)
         self.flags = flags
-        self.dataset = self.load_real_sample()
+        self._dataset = self.get_dataset()
+
+    @property
+    def dataset(self):
+        self._dataset
+
+    def get_dataset(self):
+        raise NotImplementedError('users must define this base class')
+
+    def load_real_sample(self):
+        raise NotImplementedError('users must define this base class')
+
+    def generate_real_samples(self, n_samples):
+        raise NotImplementedError('users must define this base class')
+
+#region new elems
+    # new
+    def get_batches(self):
+        raise NotImplementedError('users must define this base class')
+
+    def start_batch(self):
+        pass
+#endregion
+
+
+
+
+
+
+
+
+
+
 
     def generate_real_samples_no_label(self, n_samples):
         # choose random instances
@@ -35,7 +66,6 @@ class AbstractDataManager(object):
         # generate class labels
         y = ones((n_samples, 1))
         return X, y
-
 
     def load_real_sample_labeled(self, label):
         # load dataset
@@ -61,15 +91,6 @@ class AbstractDataManager(object):
         # scale from [0,255] to [-1,1]
         train_images_scaled = (train_images - 127.5) / 127.5
         return train_images_scaled
-
-    def get_dataset(self):
-        raise NotImplementedError('users must define this base class')
-
-    def load_real_sample(self):
-        raise NotImplementedError('users must define this base class')
-
-    def generate_real_samples(self, n_samples):
-        raise NotImplementedError('users must define this base class')
 
 
 
@@ -125,3 +146,16 @@ class AbstractDataManager(object):
 
 
         return train_ds, val_ds 
+
+    def next_batch(num, data, labels):
+        '''
+        Return a total of `num` random samples and labels. 
+        '''
+        idx = np.arange(0 , len(data))
+        np.random.shuffle(idx)
+        idx = idx[:num]
+        data_shuffle = [data[ i] for i in idx]
+        labels_shuffle = [labels[ i] for i in idx]
+
+        return np.asarray(data_shuffle), np.asarray(labels_shuffle)
+

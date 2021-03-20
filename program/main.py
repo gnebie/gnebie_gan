@@ -10,21 +10,21 @@ from set_up_program.setup_log import setup_log
 
 
 from tools.save_data import SaveData
-from model.model import Model
-from model.simple_gan import SimpleGan
+from model.gan_models.simple_gan import SimpleGan
 from data.mnist_data import MnistData
 
 def simple_mnist_model(flags):
     logger.info("Create simple mnist gan model.")
 
-    save_data = SaveData(flags)
     datas = MnistData(flags)
-    gan = SimpleGan(flags, save_data)
-
+    gan = SimpleGan(flags)
+    save_data = SaveData(flags, gan)
 
     model = Model(flags, gan, datas, save_data)
     return model
 
+def create_model(flags):
+    return simple_mnist_model(flags)
 
 def setup_info():
     # get parse infos
@@ -43,7 +43,7 @@ def main():
 
     # Create the model
     logger.trace("Create model:")
-    model = simple_mnist_model(flags)
+    model = create_model(flags)
 
     # run the model
     if flags.train:

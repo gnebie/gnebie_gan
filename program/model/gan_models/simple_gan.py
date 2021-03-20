@@ -18,19 +18,24 @@ from .abstract_model import AbstractGanModel
 import logging
 logger = logging.getLogger("gnebie_gan")
 
+from .save_model.external_save_model import ExternalSaveModel
 
 class SimpleGan(AbstractGanModel):
     def __init__(self, flags):
-        super().__init__()
-        self.flags = flags
+        super().__init__(flags)
         self.latent_dim = flags.latent_dim
-        self.basename = flags.out
         self.retrieve_or_create_model()
+        self.save = ExternalSaveModel(flags)
 
     def create_new_model(self):
         self.create_generator()
         self.create_discriminator()
         self.conbinate_model()
+
+    def print_summary(self): 
+        self.generator.summary()
+        self.discriminator.summary()
+        self.combine_model.summary()
 
     def conbinate_model(self):
         # define the combined generator and discriminator model, for updating the generator
@@ -168,6 +173,45 @@ class SimpleGan(AbstractGanModel):
         g_loss = self.gan_model.train_on_batch(X_gan, y_gan)
         return g_loss
 
+    def run_train_step(self, epoch, bat, n_batch, half_batch, i):
+        # TODO: make the code before the loop variable
+
+        # calculate the number of batches per epoch
+        # TODO: need dataset shape
+        bat_per_epo = int(self.datas.dataset.shape[0] / n_batch)
+ 
+        # calculate the total iterations based on batch and epoch
+        n_steps = bat_per_epo * n_epochs
+ 
+        # calculate the number of samples in half a batch
+        half_batch = int(n_batch / 2)
+        logger.info("bat_per_epo: %d, half_batch %d, n_steps : %d ", bat_per_epo, half_batch, n_steps)
+
+        # TODO: end
+
+        # get randomly selected 'real' samples
+        X_real = self.datas.generate_real_samples(half_batch)
+
+        # update discriminator model weights
+        d_loss1, d_acc1 = self.update_discriminator_real(X_real)
+
+        # update discriminator model weights
+        d_loss2, d_acc2 = self.update_discriminator_fake(half_batch)
+
+        # prepare points in latent space as input for the generator
+        g_loss = self.calculate_generate_lost(n_batch)
+        
+        # # record history TODO reput
+        # self.saves_tools.record_history(i, d_loss1, d_loss2, g_loss, d_acc1, d_acc2)
+
+    def save_model(self, step): 
+        self.save.save_checkpoint(step)
+
+    def save_last_model(self): 
+        self.save.save_last_checkpoint()
+
+    def restore_last_model(self, *args):
+        self.save.restore_checkpoint()
 
 
 def generate_latent_points(latent_dim, n_samples):
@@ -182,122 +226,3 @@ def generate_latent_points(latent_dim, n_samples):
 
 
 
-class tensorflowDCGan(AbstractGanModel):
-    def __init__(self, flags):
-        super().__init__()
-        self.flags = flags
-        self.latent_dim = flags.latent_dim
-        self.basename = flags.out
-        self.retrieve_or_create_model()
-
-        noise_dim = 100
-        num_examples_to_generate = 16
-        self.seed = tf.random.normal([num_examples_to_generate, noise_dim])
-
-
-    def create_new_model(self):
-        self.create_generator()
-        self.create_discriminator()
-        self.conbinate_model()
-
-    @property
-    def optimizer(self):
-        # https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam
-        """
-        tf.keras.optimizers.Adam(
-            learning_rate=0.001, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False,
-            name='Adam', **kwargs
-        )
-        """
-        generator_optimizer = tf.keras.optimizers.Adam(1e-4)
-        discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
-
-        return tf.keras.optimizers.Adam(1e-4)
-
-    @property
-    def lost_function(self):
-        # https://www.tensorflow.org/api_docs/python/tf/keras/losses/binary_crossentropy
-        """
-        tf.keras.losses.binary_crossentropy(
-            y_true, y_pred, from_logits=False, label_smoothing=0
-        )
-        """
-        return tf.keras.losses.BinaryCrossentropy(from_logits=True)
-    
-    def discriminator_loss(self, real_output, fake_output):
-        real_loss = self.lost_function(tf.ones_like(real_output), real_output)
-        fake_loss = self.lost_function(tf.zeros_like(fake_output), fake_output)
-        total_loss = real_loss + fake_loss
-        return total_loss
-
-    def generator_loss(self, fake_output):
-        return self.lost_function(tf.ones_like(fake_output), fake_output)
-
-    @property
-    def generator(self):
-        return self._generator
-
-    @property
-    def discriminator(self):
-        return self._discriminator
-
-    @property
-    def combine_model(self):
-        return self._conbinate_model
-
-    @generator.setter
-    def generator(self, generator):
-        self._generator = generator
-
-    @discriminator.setter
-    def discriminator(self, discriminator):
-        self._discriminator = discriminator
-
-    @combine_model.setter
-    def combine_model(self, combine_model):
-        self._conbinate_model = combine_model
-
-
-    def create_generator(self):
-        model = tf.keras.Sequential()
-        model.add(layers.Dense(7*7*256, use_bias=False, input_shape=(100,)))
-        model.add(layers.BatchNormalization())
-        model.add(layers.LeakyReLU())
-
-        model.add(layers.Reshape((7, 7, 256)))
-        assert model.output_shape == (None, 7, 7, 256) # Note: None is the batch size
-
-        model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-        assert model.output_shape == (None, 7, 7, 128)
-        model.add(layers.BatchNormalization())
-        model.add(layers.LeakyReLU())
-
-        model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-        assert model.output_shape == (None, 14, 14, 64)
-        model.add(layers.BatchNormalization())
-        model.add(layers.LeakyReLU())
-
-        model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-        assert model.output_shape == (None, 28, 28, 1)
-
-        return model
-    
-    def create_discriminator(self):
-        model = tf.keras.Sequential()
-        model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                                        input_shape=[28, 28, 1]))
-        model.add(layers.LeakyReLU())
-        model.add(layers.Dropout(0.3))
-
-        model.add(layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
-        model.add(layers.LeakyReLU())
-        model.add(layers.Dropout(0.3))
-
-        model.add(layers.Flatten())
-        model.add(layers.Dense(1))
-
-        return model
-    
-
-
-# https://machinelearningmastery.com/how-to-train-a-progressive-growing-gan-in-keras-for-synthesizing-faces/

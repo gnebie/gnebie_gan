@@ -14,12 +14,11 @@ logger = logging.getLogger("gnebie_gan")
 class MnistData(AbstractDataManager):
     def __init__(self, flags):
         super().__init__(flags)
-        self.flags = flags
-        self.dataset = self.load_real_sample()
 
     def get_dataset(self):
         return load_data()
 
+    # ???
     def get_train_bached_dataset(self):
         BUFFER_SIZE = 60000
         BATCH_SIZE = 256
@@ -40,6 +39,7 @@ class SubFolderData(AbstractDataManager):
     get all the files of the folder, labeled by subfolder 
     """
     def __init__(self, flags):
+        super().__init__(flags)
         self.flags = flags
         self.dataset_path = '/home/gnebie/Downloads/anime-faces/clean'
         self.dataset = self.load_real_sample()
@@ -63,6 +63,7 @@ class FolderData(AbstractDataManager):
     get all the files of the folder 
     """
     def __init__(self, flags):
+        super().__init__(flags)
         self.flags = flags
         self.dataset = self.load_real_sample()
 

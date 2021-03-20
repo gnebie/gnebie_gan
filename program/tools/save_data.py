@@ -6,6 +6,7 @@ logger = logging.getLogger("gnebie_gan")
 
 from .image import create_gif
 
+
 class SaveData(object):
     def __init__(self, flags, gan_model):
         self.gan_model = gan_model
@@ -22,7 +23,7 @@ class SaveData(object):
         self.g_hist = list()
         self.a1_hist = list()
         self.a2_hist = list()
-        self.seed = tf.random.normal([num_examples_to_generate, noise_dim])
+        # self.seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 
     def record_history(self, step, d_loss1, d_loss2, g_loss, d_acc1, d_acc2):
