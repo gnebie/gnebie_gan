@@ -26,13 +26,13 @@ def arguments(parser):
     parser.add_arg("-f", "--flag", help="store flag true", action="store_true")
     parser.add_arg("--latent_dim", type=int, default=50, help="the generator latent number")
     parser.add_arg("--samples_nbr", type=int, default=100, help="the samples number to be create")
-
+    parser.add_arg("--dataset", type=str, default="dataset", help="the dataset path")
+    parser.add_arg('--batch_size', type=int, default=128, help="the batch size")
+    parser.add_arg('--epochs', type=int, default=10, help="the epoch numbre.")
 
 
 def to_add(parser):
     # to add 
-    parser.add_arg("--dataset", type=str, default="dataset", help="the dataset path")
-    parser.add_arg('--batchSize', type=int, default=128, help="the batch size")
 
 
     parser.add_arg('--imageSize', type=int, default=64, help='the height / width of the input image to network')

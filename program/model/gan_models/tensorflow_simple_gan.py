@@ -2,13 +2,19 @@ import glob
 import imageio
 import matplotlib.pyplot as plt
 import numpy as np
+
+from numpy.random import randn
 import os
 import PIL
 from tensorflow.keras import layers
 import time
+import tensorflow as tf
 
 from IPython import display
 
+import logging
+logger = logging.getLogger("gnebie_gan")
+from .save_model.tensorflow_save_model import TensorflowSaveModel
 from .abstract_model import AbstractGanModel
 
 import logging
@@ -20,7 +26,11 @@ class tensorflowDCGan(AbstractGanModel):
         self._cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
         self.generator_optimizer = tf.keras.optimizers.Adam(1e-4)
         self.discriminator_optimizer = tf.keras.optimizers.Adam(1e-4)
-        self.save = TensorflowSaveModel(flags)
+        self.save = TensorflowSaveModel(flags, self.name)
+        self.retrieve_or_create_model()
+        self.noise_dim = 100
+        self.batch_size = flags.batch_size
+
 
     def create_new_model(self):
         self.generator = self.create_generator()
@@ -68,7 +78,6 @@ class tensorflowDCGan(AbstractGanModel):
         return model
 
     def discriminator_loss(self, real_output, fake_output):
-        def discriminator_loss(real_output, fake_output):
         real_loss = self._cross_entropy(tf.ones_like(real_output), real_output)
         fake_loss = self._cross_entropy(tf.zeros_like(fake_output), fake_output)
         total_loss = real_loss + fake_loss
@@ -82,29 +91,53 @@ class tensorflowDCGan(AbstractGanModel):
     def save_model():
         self.save.save_checkpoint()
 
+    def restore_last_model():
+        self.create_new_model()
+        self.save.restore_checkpoint()
+
     def restore_model():
         self.save.restore_checkpoint()
-    
+
+    def generate_fake_samples_images(self, n_samples):
+        return self.generator(tf.random.normal([1, 100]), training=False)
+        image_nbr = generate_latent_points(self.latent_dim, n_samples)
+        X, y = self.generator.predict(image_nbr)
+        return X
+        return [ self.generator(tf.random.normal([1, 100]), training=False) for i in range(image_nbr) ]
+
+
     @tf.function
-    def train_steps(self):
-        noise = tf.random.normal([BATCH_SIZE, noise_dim])
+    def train_steps(self, images, step):
+        noise = tf.random.normal([self.batch_size, self.noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
-        generated_images = generator(noise, training=True)
+            generated_images = self.generator(noise, training=True)
 
-        real_output = discriminator(images, training=True)
-        fake_output = discriminator(generated_images, training=True)
+            real_output = self.discriminator(images, training=True)
+            fake_output = self.discriminator(generated_images, training=True)
 
-        gen_loss = generator_loss(fake_output)
-        disc_loss = discriminator_loss(real_output, fake_output)
+            gen_loss = self.generator_loss(fake_output)
+            disc_loss = self.discriminator_loss(real_output, fake_output)
 
-        gradients_of_generator = gen_tape.gradient(gen_loss, generator.trainable_variables)
-        gradients_of_discriminator = disc_tape.gradient(disc_loss, discriminator.trainable_variables)
+        gradients_of_generator = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
+        gradients_of_discriminator = disc_tape.gradient(disc_loss, self.discriminator.trainable_variables)
 
-        generator_optimizer.apply_gradients(zip(gradients_of_generator, generator.trainable_variables))
-        discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, discriminator.trainable_variables))
+        self.generator_optimizer.apply_gradients(zip(gradients_of_generator, self.generator.trainable_variables))
+        self.discriminator_optimizer.apply_gradients(zip(gradients_of_discriminator, self.discriminator.trainable_variables))
 
 
-    def run_train_step(self, images, i):
-        self.train_steps()
+    def run_train_step(self, images, step):
+        self.train_steps(images, step)
+
+    def print_summary(self):
+        self.generator.summary()
+        self.discriminator.summary()
+
+def generate_latent_points(latent_dim, n_samples):
+	# generate points in the latent space
+	x_input = randn(latent_dim * n_samples)
+	# reshape into a batch of inputs for the network
+	x_input = x_input.reshape(n_samples, latent_dim)
+	return x_input
+ 
 

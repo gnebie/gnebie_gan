@@ -5,9 +5,10 @@ logger = logging.getLogger("gnebie_gan")
 
 class AbstractSaveModel(object):
     __metaclass__ = abc.ABCMeta
-    def __init__(self, flags):
+    def __init__(self, flags, name):
         # save variables functions
         self.flags = flags
+        self.name = name
         self.basename = flags.out
         self.checkpoint_path = os.path.join(self.basename, "checkpoint")
         os.makedirs(self.checkpoint_path, exist_ok=True)

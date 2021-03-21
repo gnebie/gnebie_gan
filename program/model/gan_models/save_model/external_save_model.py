@@ -1,20 +1,22 @@
 import logging
 logger = logging.getLogger("gnebie_gan")
+import os
+import tensorflow as tf
 
 from .abstract_save_model import AbstractSaveModel
 
 class ExternalSaveModel(AbstractSaveModel):
-    def __init__(self, flags):
-        super().__init__(flags)
+    def __init__(self, flags, name):
+        super().__init__(flags, name)
 
     def save_checkpoint(self, *args, **kwars):
-        self.save_model(self, *args)
+        self.save_model(*args)
 
     def save_last_checkpoint(self, *args, **kwars):
-        self.save_last_model(self, *args)
+        self.save_last_model(*args)
 
-    def restore_checkpoint(self):
-        self.restore_last_model(self, *args)
+    def restore_checkpoint(self, *args):
+        self.restore_last_model(*args)
 
     # Basic save functions
     def get_model_path_from_step(self, step):

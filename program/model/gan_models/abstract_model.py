@@ -16,6 +16,7 @@ class AbstractGanModel(object):
         self.name = "model"
         self.flags = flags
         self.basename = flags.out
+        self.latent_dim = flags.latent_dim
 
     @abc.abstractmethod
     def run_train_step(self, *args): 

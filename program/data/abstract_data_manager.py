@@ -2,6 +2,7 @@
 
 import abc
 
+import numpy as np
 from numpy import expand_dims
 from numpy.random import randn
 from numpy.random import randint
@@ -17,16 +18,17 @@ class AbstractDataManager(object):
    
     def __init__(self, flags):
         self.flags = flags
-        self._dataset = self.get_dataset()
-
+        self.batch_size = flags.batch_size
+        self._dataset = self.load_normalize_dataset()
+        
     @property
     def dataset(self):
-        self._dataset
+        return self._dataset
 
     def get_dataset(self):
         raise NotImplementedError('users must define this base class')
 
-    def load_real_sample(self):
+    def load_normalize_dataset(self):
         raise NotImplementedError('users must define this base class')
 
     def generate_real_samples(self, n_samples):
@@ -38,7 +40,8 @@ class AbstractDataManager(object):
         raise NotImplementedError('users must define this base class')
 
     def start_batch(self):
-        pass
+        raise NotImplementedError('users must define this base class')
+
 #endregion
 
 
@@ -51,12 +54,6 @@ class AbstractDataManager(object):
 
 
 
-    def generate_real_samples_no_label(self, n_samples):
-        # choose random instances
-        ix = randint(0, self.dataset.shape[0], n_samples)
-        # select images
-        X = self.dataset[ix]
-        return X
 
     def generate_real_samples_labeled(self, n_samples):
         # choose random instances
@@ -67,7 +64,7 @@ class AbstractDataManager(object):
         y = ones((n_samples, 1))
         return X, y
 
-    def load_real_sample_labeled(self, label):
+    def load_normalize_dataset_labeled(self, label):
         # load dataset
         (train_images, train_labels), (_, _) = self.get_dataset()
         # expand to 3d, e.g. add channels
@@ -81,7 +78,14 @@ class AbstractDataManager(object):
         train_images_selected = (train_images_selected - 127.5) / 127.5
         return train_images_selected
 
-    def load_real_sample_no_label(self):
+    def generate_real_samples_no_label(self, n_samples):
+        # choose random instances
+        ix = randint(0, self.dataset.shape[0], n_samples)
+        # select images
+        X = self.dataset[ix]
+        return X
+
+    def load_normalize_dataset_no_label(self):
         # load dataset
         (train_images), (_) = self.get_dataset()
         # expand to 3d, e.g. add channels
@@ -91,10 +95,6 @@ class AbstractDataManager(object):
         # scale from [0,255] to [-1,1]
         train_images_scaled = (train_images - 127.5) / 127.5
         return train_images_scaled
-
-
-
-
 
 
 
@@ -147,7 +147,7 @@ class AbstractDataManager(object):
 
         return train_ds, val_ds 
 
-    def next_batch(num, data, labels):
+    def next_batch(self, num, data, labels):
         '''
         Return a total of `num` random samples and labels. 
         '''

@@ -23,17 +23,16 @@ from .save_model.external_save_model import ExternalSaveModel
 class SimpleGan(AbstractGanModel):
     def __init__(self, flags):
         super().__init__(flags)
-        self.latent_dim = flags.latent_dim
+        self.save = ExternalSaveModel(flags, self.name)
         self.retrieve_or_create_model()
-        self.save = ExternalSaveModel(flags)
 
     def create_new_model(self):
         self.create_generator()
         self.create_discriminator()
         self.conbinate_model()
+        self.save.get_models(self.generator, self.discriminator, self.combine_model)
 
     def print_summary(self): 
-        self.generator.summary()
         self.discriminator.summary()
         self.combine_model.summary()
 
@@ -173,27 +172,17 @@ class SimpleGan(AbstractGanModel):
         g_loss = self.gan_model.train_on_batch(X_gan, y_gan)
         return g_loss
 
-    def run_train_step(self, epoch, bat, n_batch, half_batch, i):
-        # TODO: make the code before the loop variable
-
-        # calculate the number of batches per epoch
-        # TODO: need dataset shape
-        bat_per_epo = int(self.datas.dataset.shape[0] / n_batch)
- 
-        # calculate the total iterations based on batch and epoch
-        n_steps = bat_per_epo * n_epochs
- 
+    def run_train_step(self, images, step):
+        
         # calculate the number of samples in half a batch
+        n_batch = self.flags.batch_size
         half_batch = int(n_batch / 2)
-        logger.info("bat_per_epo: %d, half_batch %d, n_steps : %d ", bat_per_epo, half_batch, n_steps)
-
-        # TODO: end
-
+        
         # get randomly selected 'real' samples
-        X_real = self.datas.generate_real_samples(half_batch)
+        # X_real = images #self.datas.generate_real_samples(half_batch)
 
         # update discriminator model weights
-        d_loss1, d_acc1 = self.update_discriminator_real(X_real)
+        d_loss1, d_acc1 = self.update_discriminator_real(images)
 
         # update discriminator model weights
         d_loss2, d_acc2 = self.update_discriminator_fake(half_batch)
@@ -202,7 +191,7 @@ class SimpleGan(AbstractGanModel):
         g_loss = self.calculate_generate_lost(n_batch)
         
         # # record history TODO reput
-        # self.saves_tools.record_history(i, d_loss1, d_loss2, g_loss, d_acc1, d_acc2)
+        # self.saves_tools.record_history(step, d_loss1, d_loss2, g_loss, d_acc1, d_acc2)
 
     def save_model(self, step): 
         self.save.save_checkpoint(step)
@@ -212,6 +201,9 @@ class SimpleGan(AbstractGanModel):
 
     def restore_last_model(self, *args):
         self.save.restore_checkpoint()
+        self.generator = self.save.generator
+        self.discriminator = self.save.discriminator
+        self.combine_model = self.save.combine_model
 
 
 def generate_latent_points(latent_dim, n_samples):
