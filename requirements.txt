@@ -1,0 +1,7 @@
+tf-nightly-gpu==2.5.0
+numpy==1.19.5
+scipy==1.6.1
+matplotlib==3.3.4
+configargparse==1.3
+imageio==2.9.0
+IPython==7.21.0

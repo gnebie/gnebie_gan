@@ -1,0 +1,9 @@
+out
+.vscode
+other
+__pycache__
+*/__pycache__
+test_*
+*.swp
+*.swp
+
